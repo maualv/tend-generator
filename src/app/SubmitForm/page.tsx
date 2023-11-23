@@ -2,7 +2,11 @@
 // components/SubmitForm.js
 import { useState } from 'react';
 
+import routeData from './routeData';
+import modelData from './modelData';
+
 import xml2js from 'xml2js';
+import JSZip from 'jszip';
 
 
 const SubmitForm = ({ initialData }) => {
@@ -25,6 +29,11 @@ const SubmitForm = ({ initialData }) => {
 
     const handleAddEndpoint = () => {
         setFormData([...formData, { path: '', body: '', requestType: '' }]);
+    };
+
+    const handleModelData = () => {
+        const result = modelData(formData);
+        console.log(result);
     };
 
 
@@ -55,9 +64,39 @@ const SubmitForm = ({ initialData }) => {
         document.body.removeChild(a);
     };
 
+    const downloadZip = () => {
+        const jsonContent = JSON.stringify(formData, null, 2);
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const resultModel = modelData(formData);
+        const resultRouter = routeData(formData);
+        
+
+        const zip = new JSZip();
+        const modelFolder = zip.folder('model');
+        const routerFolder = zip.folder('router');
+
+        modelFolder.file('model.js', resultModel);
+        routerFolder.file('router.js', resultRouter);
+
+        zip.file('submitted_data.json', blob);
+
+        zip.generateAsync({ type: 'blob' }).then(content => {
+        // Crea un objeto Blob con el contenido del ZIP
+        const zipBlob = new Blob([content]);
+
+        // Crea un enlace para descargar el ZIP
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(zipBlob);
+        a.download = 'apiCode.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+    };
+
     return (
         <div className="max-w-md mx-auto bg-white p-8 rounded shadow-md">
-            <h2 className="text-2xl font-semibold mb-4">Generador de Plantilla de Rutas</h2>
+            <h2 className="text-2xl font-semibold mb-4">Generador de código con js y mongoose</h2>
 
             <form>
                 {formData.map((obj, index) => (
@@ -109,6 +148,9 @@ const SubmitForm = ({ initialData }) => {
 
                 <button type="button" onClick={downloadXml} className="bg-yellow-500 text-white px-4 py-2 rounded mt-4 ml-2">
                     Download XML
+                </button>
+                <button type="button" onClick={downloadZip} className="bg-violet-500 text-white px-4 py-2 rounded mt-4 ml-2">
+                    Download API Code
                 </button>
             </form>
         </div>
